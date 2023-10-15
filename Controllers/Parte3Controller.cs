@@ -2,6 +2,7 @@
 using ProvaPub.Models;
 using ProvaPub.Repository;
 using ProvaPub.Services;
+using static ProvaPub.Services.OrderService;
 
 namespace ProvaPub.Controllers
 {
@@ -19,7 +20,25 @@ namespace ProvaPub.Controllers
 		[HttpGet("orders")]
 		public async Task<Order> PlaceOrder(string paymentMethod, decimal paymentValue, int customerId)
 		{
-			return await new OrderService().PayOrder(paymentMethod, paymentValue, customerId);
+			IPaymentProcessor paymentProcessor = null;
+
+            switch (paymentMethod)
+			{
+                case "pix":
+                    paymentProcessor = new PixPayment();
+					break;
+				case "creditcard":
+                    paymentProcessor = new CreditcardPayment();
+					break;
+                case "paypal":
+                    paymentProcessor = new PaypalPayment();
+					break;
+				default: throw new Exception("Metodo de Pagamento vazio, não é possível processar");
+            }	
+
+			var handlerPayment = new PaymentHandler(paymentProcessor);
+
+            return await handlerPayment.PayOrder(paymentValue, customerId);
 		}
 	}
 }
