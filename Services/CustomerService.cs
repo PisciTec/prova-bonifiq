@@ -8,6 +8,7 @@ namespace ProvaPub.Services
     {
         TestDbContext _ctx;
         ICustomerRepository _customerRepository;
+        IOrderRepository _orderRepository;
         public CustomerService()
         {
             
@@ -16,6 +17,12 @@ namespace ProvaPub.Services
         public CustomerService(ICustomerRepository customerRepository)
         {
             _customerRepository = customerRepository;
+        }
+
+        public CustomerService(ICustomerRepository customerRepository, IOrderRepository orderRepository)
+        {
+            _customerRepository = customerRepository;
+            _orderRepository = orderRepository;
         }
         public CustomerService(TestDbContext ctx)
         {
@@ -48,18 +55,14 @@ namespace ProvaPub.Services
 
         public async Task<bool> CanPurchase(int customerId, decimal purchaseValue)
         {
-            if (customerId <= 0) throw new ArgumentOutOfRangeException(nameof(customerId));
-
             if (purchaseValue <= 0) throw new ArgumentOutOfRangeException(nameof(purchaseValue));
 
             //Business Rule: Non registered Customers cannot purchase
-            var customer = await _ctx.Customers.FindAsync(customerId);
-            if (customer == null) throw new InvalidOperationException($"Customer Id {customerId} does not exists");
-
+            var customer = await IsRegisteredCustomer(customerId);
+            
             //Business Rule: A customer can purchase only a single time per month
-            var baseDate = DateTime.UtcNow.AddMonths(-1);
-            var ordersInThisMonth = await _ctx.Orders.CountAsync(s => s.CustomerId == customerId && s.OrderDate >= baseDate);
-            if (ordersInThisMonth > 0)
+            var customerAlreadyMadeAPurchaseResult = await CustomerAlreadyMadeAPurchaseInThisMonth(customerId);
+            if (customerAlreadyMadeAPurchaseResult)
                 return false;
 
             //Business Rule: A customer that never bought before can make a first purchase of maximum 100,00
@@ -78,6 +81,21 @@ namespace ProvaPub.Services
             if (customer == null) throw new InvalidOperationException($"Customer Id {customerId} does not exists");
 
             return customer;
+        }
+
+        public async Task<bool> CustomerAlreadyMadeAPurchaseInThisMonth(int customerId)
+        {
+            var baseDate = DateTime.UtcNow.AddMonths(-1);
+            int ordersInThisMonth = await _orderRepository.CountAsync(s => s.CustomerId == customerId && s.OrderDate >= baseDate);
+            
+            return ordersInThisMonth > 0;
+        }
+
+        public async Task<bool> FirstPurchaseAndValueGreaterThan100(int customerId, decimal purchaseValue)
+        {
+            var haveBoughtBefore = await _customerRepository.CountAsync(s => s.Id == customerId && s.Orders.Any());
+     
+            return haveBoughtBefore == 0 && purchaseValue > 100;
         }
 
     }
