@@ -4,38 +4,30 @@ using System.Linq.Expressions;
 
 namespace ProvaPub.Repository
 {
-    public class OrderRepository : IOrderRepository, IDisposable
+    public class OrderRepository : IOrderRepository
     {
-        private TestDbContext _context;
+        private readonly DbSet<Order> orders;
+        private readonly TestDbContext _ctx;
 
         public OrderRepository(TestDbContext context)
         {
-            _context = context;
+            _ctx = context;
+            orders = context.Set<Order>();
         }
 
         public async Task<int> CountAsync(Expression<Func<Order, bool>> expression)
         {
-            return await _context.Orders.CountAsync(expression);
+            return await orders.CountAsync(expression);
         }
-
-        private bool disposed = false;
-
-        protected virtual void Dispose(bool disposing)
+        public void AddOrder(Order order)
         {
-            if (!this.disposed)
-            {
-                if (disposing)
-                {
-                    _context.Dispose();
-                }
-            }
-            this.disposed = true;
+            orders.Add(order);
         }
 
-        public void Dispose()
+        public void SaveChanges()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            _ctx.SaveChanges();
         }
+
     }
 }

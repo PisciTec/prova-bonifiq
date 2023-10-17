@@ -6,5 +6,7 @@ namespace ProvaPub.Repository
     public interface IOrderRepository
     {
         Task<int> CountAsync(Expression<Func<Order, bool>> expression);
+        void AddOrder(Order order);
+        void SaveChanges();
     }
 }

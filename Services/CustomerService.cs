@@ -29,15 +29,6 @@ namespace ProvaPub.Services
             _ctx = ctx;
         }
 
-        public bool IsPrime(int candidate)
-        {
-            if (candidate == 1)
-            {
-                return false;
-            }
-            throw new NotImplementedException("Not fully implemented.");
-        }
-
         public ListResult<Customer> ListCustomers(int page)
         {
             IQueryable<Customer> customers = _ctx.Customers.OrderBy(x => x.Id);
@@ -66,8 +57,8 @@ namespace ProvaPub.Services
                 return false;
 
             //Business Rule: A customer that never bought before can make a first purchase of maximum 100,00
-            var haveBoughtBefore = await _ctx.Customers.CountAsync(s => s.Id == customerId && s.Orders.Any());
-            if (haveBoughtBefore == 0 && purchaseValue > 100)
+            var firstPurchaseAndValueGreaterThan100 = await FirstPurchaseAndValueGreaterThan100(customerId,purchaseValue);
+            if (firstPurchaseAndValueGreaterThan100)
                 return false;
 
             return true;

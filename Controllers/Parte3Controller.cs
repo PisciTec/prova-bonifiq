@@ -17,10 +17,17 @@ namespace ProvaPub.Controllers
 	[Route("[controller]")]
 	public class Parte3Controller :  ControllerBase
 	{
-		[HttpGet("orders")]
+        private readonly IOrderRepository _orderRepository;
+
+        public Parte3Controller(TestDbContext ctx)
+        {
+            _orderRepository = new OrderRepository(ctx);
+        }
+        [HttpGet("orders")]
 		public async Task<Order> PlaceOrder(string paymentMethod, decimal paymentValue, int customerId)
 		{
 			IPaymentProcessor paymentProcessor = null;
+			paymentMethod = paymentMethod.ToLower();
 
             switch (paymentMethod)
 			{
@@ -36,7 +43,7 @@ namespace ProvaPub.Controllers
 				default: throw new Exception("Metodo de Pagamento vazio, não é possível processar");
             }	
 
-			var handlerPayment = new PaymentHandler(paymentProcessor);
+			var handlerPayment = new PaymentHandler(paymentProcessor,_orderRepository);
 
             return await handlerPayment.PayOrder(paymentValue, customerId);
 		}
