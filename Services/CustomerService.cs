@@ -7,10 +7,28 @@ namespace ProvaPub.Services
     public class CustomerService
     {
         TestDbContext _ctx;
+        ICustomerRepository _customerRepository;
+        public CustomerService()
+        {
+            
+        }
 
+        public CustomerService(ICustomerRepository customerRepository)
+        {
+            _customerRepository = customerRepository;
+        }
         public CustomerService(TestDbContext ctx)
         {
             _ctx = ctx;
+        }
+
+        public bool IsPrime(int candidate)
+        {
+            if (candidate == 1)
+            {
+                return false;
+            }
+            throw new NotImplementedException("Not fully implemented.");
         }
 
         public ListResult<Customer> ListCustomers(int page)
@@ -50,6 +68,16 @@ namespace ProvaPub.Services
                 return false;
 
             return true;
+        }
+
+        public async Task<Customer> IsRegisteredCustomer(int customerId)
+        {
+            if (customerId <= 0) throw new ArgumentOutOfRangeException(nameof(customerId));
+
+            var customer = await _customerRepository.FindAsync(customerId);
+            if (customer == null) throw new InvalidOperationException($"Customer Id {customerId} does not exists");
+
+            return customer;
         }
 
     }
